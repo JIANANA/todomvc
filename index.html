@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Template • TodoMVC</title>
+	<link rel="stylesheet" href="node_modules/todomvc-common/base.css">
+	<link rel="stylesheet" href="node_modules/todomvc-app-css/index.css">
+	<!-- CSS overrides - remove if you don't need it -->
+	<link rel="stylesheet" href="css/app.css">
+</head>
+
+<body>
+	<section class="todoapp" id="app">
+		<header class="header">
+			<h1>todos</h1>
+			<input class="new-todo" placeholder="What needs to be done?" v-focus v-model="msg" @keyup.enter="add()">
+		</header>
+		<!-- This section should be hidden by default and shown when there are todos -->
+		<section class="main">
+			<input id="toggle-all" class="toggle-all" type="checkbox" v-model="toggleAll">
+			<label for="toggle-all">Mark all as complete</label>
+			<!-- <ul class="todo-list">
+				<li class="completed">
+					<div class="view">
+						<input class="toggle" type="checkbox" checked>
+						<label>Taste JavaScript</label>
+						<button class="destroy"></button>
+					</div>
+					<input class="edit" value="Create a TodoMVC template">
+				</li>
+				<li>
+					<div class="view">
+						<input class="toggle" type="checkbox">
+						<label>Buy a unicorn</label>
+						<button class="destroy"></button>
+					</div>
+					<input class="edit" value="Rule the web">
+				</li>
+			</ul> -->
+			<ul class="todo-list">
+				<!-- <li  v-for="item in msgList" >
+						<div class="view">
+							<input class="toggle" type="checkbox" @click="toggle()">
+							<label>{{item.isfinished}}</label>
+							<button class="destroy"></button>
+						</div>
+						<input class="edit" value="Create a TodoMVC template">
+					</li> -->
+				<li v-for="(item,i) in msgList" :key="item.id" :class="item.isfinished ? 'completed':''">
+					<div class="view">
+						<input class="toggle" type="checkbox" @click="toggle(i)" ref="ipt">
+						<label>{{item.msg}}</label>
+						<button class="destroy" @click="del(i)"></button>
+					</div>
+					<input class="edit" value="Rule the web">
+				</li>
+			</ul>
+		</section>
+		<!-- This footer should hidden by default and shown when there are todos -->
+		<footer class="footer">
+			<!-- This should be `0 items left` by default -->
+			<span class="todo-count">
+				<strong>{{msgList.length-getlength.length}}</strong>
+				item left
+			</span>
+			<!-- Remove this if you don't implement routing -->
+			<ul class="filters">
+				<li>
+					<a class="selected" href="#/">All</a>
+				</li>
+				<li>
+					<a href="#/active">Active</a>
+				</li>
+				<li>
+					<a href="#/completed">Completed</a>
+				</li>
+			</ul>
+			<!-- Hidden if no completed items are left ↓ -->
+			<button class="clear-completed" @click="clear()" v-if="isShow">Clear completed</button>
+		</footer>
+	</section>
+	<!-- Scripts here. Don't remove ↓ -->
+	<script src="node_modules/todomvc-common/base.js"></script>
+	<!-- 引入vue实例 -->
+	<script src="./node_modules/vue/dist/vue.js"></script>
+	<!-- <script src="js/app.js"></script> -->
+	<script>
+		var vm = new Vue({
+			el: '#app',
+			data: {
+				msg: '',
+				msgList: [],
+				mid: new Date(),
+				msgobj: {},
+				arr: [],
+				isfinished: false,
+				count: 0,
+				isShow: false
+			},
+			// 创建阶段的声明周期函数
+			created() {
+				// 一进入页面就需要给获取本地数据展示到页面上
+				let mymsgobj = window.localStorage.getItem('msgobj');
+				// 把取出来的字符串转换为json格式,并重新赋值给msglist
+				this.msgList = JSON.parse(mymsgobj);
+				this.change()
+			},
+			mounted() {
+				// 由于这里需要对元素操作,由于created只有值没有元素,所以这时需要在mounted,已经获取了结构,对数据进行操作
+				this.$refs.ipt.forEach((ele, i) => {
+					this.$refs.ipt[i].checked = this.msgList[i].isfinished;
+				});
+			},
+			updated() {
+				this.change();
+			},
+
+			// 使用计算属性,获取得到的条数:
+			computed: {
+				getlength: function () {
+					return this.arr = this.msgList.filter((ele, i) => {
+						return ele.isfinished === true;
+					});
+				},
+				toggleAll(){
+					if(this.msgList.length-this.getlength.length==0){
+						return true
+					}else{
+						return false
+					}
+				}
+			},
+			directives: {
+				focus: {
+					inserted(el) {
+						el.focus()
+					}
+				}
+			},
+			methods: {
+				change() {
+					if (this.getlength.length > 0) {
+						this.isShow = true
+					} else {
+						this.isShow = false
+					}
+
+				},
+				// 添加键盘抬起事件,向数组前面添加数据
+				add() {
+					// 判断输入框是否为空
+					if (this.msg.trim().length === 0) {
+						return
+					}
+					// 定义一个空数组
+					this.msgobj = {
+						id: this.mid++,
+						msg: this.msg,
+						isfinished: this.isfinished,
+					}
+					this.msgList.push(this.msgobj);
+					window.localStorage.setItem('msgobj', JSON.stringify(this.msgList));
+					this.msg = '';
+				},
+				// 添加删除方法
+				del(i) {
+					this.msgList.splice(i, 1);
+					window.localStorage.setItem('msgobj', JSON.stringify(this.msgList));
+				},
+				//切换按钮
+				toggle(i) {
+					this.msgList[i].isfinished = this.$refs.ipt[i].checked;
+					window.localStorage.setItem('msgobj', JSON.stringify(this.msgList));
+				},
+				//清除已经完成功能
+				clear() {
+					this.msgList = this.msgList.filter((ele, i) => {
+						if (!ele.isfinished === true) {
+							return true;
+						}
+					});
+					window.localStorage.setItem('msgobj', JSON.stringify(this.msgList));
+				}
+			},
+		})
+	</script>
+</body>
+
+</html>
